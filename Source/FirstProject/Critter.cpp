@@ -2,7 +2,7 @@
 
 
 #include "Critter.h"
-#include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/InputComponent.h"
 
@@ -13,7 +13,7 @@ ACritter::ACritter()
 	PrimaryActorTick.bCanEverTick = true;
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
+	MeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(GetRootComponent());
 
 	//Initialize Camera
@@ -23,10 +23,10 @@ ACritter::ACritter()
 	Camera->SetRelativeRotation(FRotator(-45.f, 0.f, 0.f));
 
 	//Player 0 is first player (in multiplayer) and only player for singleplayer
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
+	//AutoPossessPlayer = EAutoReceiveInput::Player0;
 
 	CurrentVelocity = FVector(0.f);
-	MaxSpeed = 100.f;
+	MaxSpeed = 240.f;
 
 }
 
