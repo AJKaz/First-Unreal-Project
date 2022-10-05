@@ -47,7 +47,22 @@ AMain::AMain() {
 	GetCharacterMovement()->JumpZVelocity = 550.f;
 	GetCharacterMovement()->AirControl = 0.75f;							// Allows movement in air, set to 1.0f for full movement
 
+
+	// Default player stat values
+	MaxHealth = 100.f;
+	Health = 65.f;
+	MaxStamina = 350.f;
+	Stamina = 120.f;
+	Coins = 0;
+
+	RunningSpeed = 650.f;
+	SprintingSpeed = 950.f;
+
+	bShiftKeyDown = false;
+
+
 }
+
 
 // Called when the game starts or when spawned
 void AMain::BeginPlay() {
@@ -73,6 +88,10 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	// Bind keyboard jumping
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+
+	// Bind keyboard sprinting
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
 
 	// Binds mouse turning
 	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
@@ -115,4 +134,41 @@ void AMain::TurnAtRate(float rate) {
 
 void AMain::LookUpAtRate(float rate) {
 	AddControllerPitchInput(rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+}
+
+void AMain::DecrementHealth(float Amount) {
+	// If player has no health, decrement health (for health bar), and die
+	if (Health - Amount <= 0.f) {
+		Health -= Amount;
+		Die();
+	}
+	else {
+		Health -= Amount;
+	}
+}
+
+void AMain::Die() {
+
+}
+
+void AMain::IncrementCoins(int32 Amount) {
+	Coins += Amount;
+}
+
+void AMain::SetMovementStatus(EMovementStatus Status) {
+	MovementStatus = Status;
+	if (MovementStatus == EMovementStatus::EMS_Sprinting) {
+		GetCharacterMovement()->MaxWalkSpeed = SprintingSpeed;
+	}
+	else {
+		GetCharacterMovement()->MaxWalkSpeed = RunningSpeed;
+	}
+}
+
+void AMain::ShiftKeyDown() {
+	bShiftKeyDown = true;
+}
+
+void AMain::ShiftKeyUp() {
+	bShiftKeyDown = false;
 }
