@@ -13,6 +13,15 @@ enum class EMovementStatus : uint8 {
 	EMS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
+UENUM(BlueprintType)
+enum class EStaminaStatus : uint8 {
+	ESS_Normal UMETA(DisplayName = "Normal"),
+	ESS_BelowMinimum UMETA(DisplayName = "BelowMinimum"),
+	ESS_Exhausted UMETA(DisplayName = "Exhausted"),
+	ESS_ExhaustedRecovering UMETA(DisplayName = "ExhaustedRecovering"),
+	EMS_MAX UMETA(DisplayName = "DefaultMAX")
+};
+
 UCLASS()
 class FIRSTPROJECT_API AMain : public ACharacter
 {
@@ -24,6 +33,17 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
 	EMovementStatus MovementStatus;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
+	EStaminaStatus StaminaStatus;
+
+	FORCEINLINE void SetStaminaStatus(EStaminaStatus Status) { StaminaStatus = Status; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float StaminaDrainRate;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float MinSprintStamina;
 
 	/** Set movement status and running speed */
 	void SetMovementStatus(EMovementStatus Status);
@@ -65,16 +85,16 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats")
 	float MaxHealth;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")	// set to BluePrintReadOnly
+	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "Player Stats")
 	float Health;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Stats")
 	float MaxStamina;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")	// set to BluePrintReadOnly
+	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "Player Stats")
 	float Stamina;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")	// set to BluePrintReadOnly
+	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "Player Stats")
 	int32 Coins;
 	
 
