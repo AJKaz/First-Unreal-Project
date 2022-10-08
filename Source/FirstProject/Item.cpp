@@ -58,10 +58,7 @@ void AItem::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 	}
 	if (OverlapSound) {
 		UGameplayStatics::PlaySound2D(this, OverlapSound);
-	}
-
-	// Destroy item and everything related, memory management, yay!
-	Destroy();
+	}	
 
 }
 

@@ -10,6 +10,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Weapon.h"
 
 
 // Sets default values
@@ -59,7 +60,11 @@ AMain::AMain() {
 	RunningSpeed = 500.f;
 	SprintingSpeed = 750.f;
 
+	bMovingForward = false;
+	bMovingRight = false;
 	bShiftKeyDown = false;
+	bLMBDown = false;
+	bInteractDown = false;
 
 	// Initalize Enums to Normal:
 	MovementStatus = EMovementStatus::EMS_Normal;
@@ -82,7 +87,7 @@ void AMain::Tick(float DeltaTime) {
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
 	switch (StaminaStatus) {
 	case EStaminaStatus::ESS_Normal:
-		if (bShiftKeyDown) {
+		if (bShiftKeyDown && (bMovingForward || bMovingRight)) {
 			// Use stamina
 			if (Stamina - DeltaStamina <= MinSprintStamina) {
 				SetStaminaStatus(EStaminaStatus::ESS_BelowMinimum);
@@ -105,7 +110,7 @@ void AMain::Tick(float DeltaTime) {
 		}
 		break;
 	case EStaminaStatus::ESS_BelowMinimum:
-		if (bShiftKeyDown) {
+		if (bShiftKeyDown && (bMovingForward || bMovingRight)) {
 			// Use Stamina
 			if (Stamina - DeltaStamina <= 0.f) {
 				SetStaminaStatus(EStaminaStatus::ESS_Exhausted);
@@ -130,7 +135,7 @@ void AMain::Tick(float DeltaTime) {
 		}
 		break;
 	case EStaminaStatus::ESS_Exhausted:
-		if (bShiftKeyDown) {
+		if (bShiftKeyDown && (bMovingForward || bMovingRight)) {
 			Stamina = 0.f;
 		}
 		else {
@@ -172,6 +177,14 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
 
+	// Bind left mouse button
+	PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &AMain::LMBDown);
+	PlayerInputComponent->BindAction("LMB", IE_Released, this, &AMain::LMBUp);
+
+	// Bind interact key ("e");
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMain::InteractDown);
+	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMain::InteractUp);
+
 	// Binds mouse turning
 	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
@@ -186,6 +199,7 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 /// </summary>
 void AMain::MoveForward(float value) {
 	if ((Controller != nullptr) && (value != 0.0f)) {
+		bMovingForward = true;
 		// Finds out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
@@ -193,17 +207,24 @@ void AMain::MoveForward(float value) {
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		AddMovementInput(Direction, value);
 	}
+	else {
+		bMovingForward = false;
+	}
 }
 
 
 void AMain::MoveRight(float value) {
 	if ((Controller != nullptr) && (value != 0.0f)) {
+		bMovingRight = true;
 		// Finds out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		AddMovementInput(Direction, value);
+	}
+	else {
+		bMovingRight = false;
 	}
 }
 
@@ -213,6 +234,28 @@ void AMain::TurnAtRate(float rate) {
 
 void AMain::LookUpAtRate(float rate) {
 	AddControllerPitchInput(rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+}
+
+void AMain::LMBDown() {
+	bLMBDown = true;
+}
+
+void AMain::LMBUp() {
+	bLMBDown = false;
+}
+
+void AMain::InteractDown() {
+	bInteractDown = true;
+	if (ActiveOverlappingItem) {
+		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
+		if (Weapon) {
+			Weapon->Equip(this);
+			SetActiveOverlappingItem(nullptr);
+		}
+	}
+}
+void AMain::InteractUp() {
+	bInteractDown = false;
 }
 
 void AMain::DecrementHealth(float Amount) {
@@ -250,4 +293,12 @@ void AMain::ShiftKeyDown() {
 
 void AMain::ShiftKeyUp() {
 	bShiftKeyDown = false;
+}
+
+void AMain::SetEquippedWeapon(AWeapon* WeaponToSet) {
+	// TEMPORARILY DESTROY WEAPON WHEN PICKING A NEW WEAPON
+	if (EquippedWeapon) {
+		EquippedWeapon->Destroy();
+	}
+	EquippedWeapon = WeaponToSet;
 }

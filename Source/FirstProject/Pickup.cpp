@@ -19,6 +19,9 @@ void APickup::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* O
 		AMain* Main = Cast<AMain>(OtherActor);
 		if (Main) {
 			Main->IncrementCoins(CoinValue);
+
+			// Destroy item and everything related, memory management, yay!
+			Destroy();
 		}
 	}
 

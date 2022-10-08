@@ -29,8 +29,8 @@ class FIRSTPROJECT_API AMain : public ACharacter
 
 public:
 	// Sets default values for this character's properties
-	AMain();
-	
+	AMain();		
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enums")
 	EMovementStatus MovementStatus;
 
@@ -112,6 +112,9 @@ public:
 	// Called for forwards/backwards input
 	void MoveForward(float value);
 
+	bool bMovingForward;
+	bool bMovingRight;
+
 	// Called for side to side input
 	void MoveRight(float value);
 
@@ -125,6 +128,14 @@ public:
 	*/
 	void LookUpAtRate(float rate);
 
+	bool bLMBDown;
+	void LMBDown();
+	void LMBUp();
+
+	bool bInteractDown;
+	void InteractDown();
+	void InteractUp();
+
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
@@ -134,5 +145,15 @@ public:
 	void Die();
 
 	void IncrementCoins(int32 Amount);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Items)
+	class AWeapon* EquippedWeapon;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Items)
+	class AItem* ActiveOverlappingItem;
+
+	void SetEquippedWeapon(AWeapon* WeaponToSet);
+	FORCEINLINE AWeapon* GetEquippedWeapon() { return EquippedWeapon; }
+	FORCEINLINE void SetActiveOverlappingItem(AItem* Item) { ActiveOverlappingItem = Item; }
 
 };
