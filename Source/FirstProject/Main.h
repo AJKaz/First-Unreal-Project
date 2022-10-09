@@ -54,17 +54,7 @@ public:
 	bool bInterpToEnemy;	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	class AEnemy* CombatTarget;
-
-
-	/** Set movement status and running speed */
-	void SetMovementStatus(EMovementStatus Status);
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
-	float RunningSpeed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
-	float SprintingSpeed;
+	class AEnemy* CombatTarget;	
 
 	bool bShiftKeyDown;
 
@@ -107,11 +97,21 @@ public:
 	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "Player Stats")
 	float Stamina;
 
+	float SHeavyAttackCost;
+	float SLightAttackCost;
+	float SJumpCost;
+
 	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "Player Stats")
 	int32 Coins;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
 	bool bAttacking;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
+	float RunningSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Running")
+	float SprintingSpeed;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
 	class UAnimMontage* CombatMontage;
@@ -167,6 +167,8 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
+	/** Set movement status and running speed */
+	void SetMovementStatus(EMovementStatus Status);
 
 	void DecrementHealth(float Amount);
 

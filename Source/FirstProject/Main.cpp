@@ -54,16 +54,28 @@ AMain::AMain() {
 	GetCharacterMovement()->JumpZVelocity = 550.f;
 	GetCharacterMovement()->AirControl = 0.75f;							// Allows movement in air, set to 1.0f for full movement
 
-
-	// Default player stat values
-	MaxHealth = 100.f;
-	Health = 100.f;
-	MaxStamina = 250.f;
-	Stamina = 125.f;
+	/**
+	*
+	* Player Stats
+	*
+	*/
 	Coins = 0;
+	MaxHealth = 100.f;
+	Health = MaxHealth;
+	MaxStamina = 250.f;
+	Stamina = MaxStamina;
+
+	// MOVE THESE TO WEAPON.CPP 
+	SHeavyAttackCost = 80.f;
+	SLightAttackCost = 45.f;
+	SJumpCost = 30.f;
 
 	RunningSpeed = 500.f;
 	SprintingSpeed = 750.f;
+	StaminaDrainRate = 25.f;
+	MinSprintStamina = 50.f;
+
+	InterpSpeed = 15.f;
 
 	bMovingForward = false;
 	bMovingRight = false;
@@ -71,17 +83,13 @@ AMain::AMain() {
 	bLMBDown = false;
 	bRMBDown = false;
 	bInteractDown = false;
+	bInterpToEnemy = false;
+	bAttacking = false;
 
 	// Initalize Enums to Normal:
 	MovementStatus = EMovementStatus::EMS_Normal;
-	StaminaStatus = EStaminaStatus::ESS_Normal;
-
-	StaminaDrainRate = 25.f;
-	MinSprintStamina = 50.f;
-
-	// Interp Values:
-	InterpSpeed = 15.f;
-	bInterpToEnemy = false;
+	StaminaStatus = EStaminaStatus::ESS_Normal;	
+		
 }
 
 
@@ -347,7 +355,8 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet) {
 }
 
 void AMain::LightAttack() {	
-	if (!bAttacking) {
+	if (!bAttacking && Stamina >= SLightAttackCost) {
+		Stamina -= SLightAttackCost;
 		bAttacking = true;
 		bInterpToEnemy = true;
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -359,7 +368,8 @@ void AMain::LightAttack() {
 }
 
 void AMain::HeavyAttack() {	
-	if (!bAttacking) {
+	if (!bAttacking && Stamina >= SHeavyAttackCost) {
+		Stamina -= SHeavyAttackCost;
 		bAttacking = true;
 		bInterpToEnemy = true;
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
