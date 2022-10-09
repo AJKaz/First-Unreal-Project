@@ -11,6 +11,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Weapon.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimInstance.h"
+#include "Sound/SoundCue.h"
 
 
 // Sets default values
@@ -64,6 +67,7 @@ AMain::AMain() {
 	bMovingRight = false;
 	bShiftKeyDown = false;
 	bLMBDown = false;
+	bRMBDown = false;
 	bInteractDown = false;
 
 	// Initalize Enums to Normal:
@@ -181,6 +185,10 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &AMain::LMBDown);
 	PlayerInputComponent->BindAction("LMB", IE_Released, this, &AMain::LMBUp);
 
+	// Bind right mouse button
+	PlayerInputComponent->BindAction("RMB", IE_Pressed, this, &AMain::RMBDown);
+	PlayerInputComponent->BindAction("RMB", IE_Released, this, &AMain::RMBUp);
+
 	// Bind interact key ("e");
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMain::InteractDown);
 	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMain::InteractUp);
@@ -198,7 +206,7 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 /// Moves player depending on direction camera is facing AND input they press
 /// </summary>
 void AMain::MoveForward(float value) {
-	if ((Controller != nullptr) && (value != 0.0f)) {
+	if ((Controller != nullptr) && (value != 0.0f) && !bAttacking) {
 		bMovingForward = true;
 		// Finds out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -214,7 +222,7 @@ void AMain::MoveForward(float value) {
 
 
 void AMain::MoveRight(float value) {
-	if ((Controller != nullptr) && (value != 0.0f)) {
+	if ((Controller != nullptr) && (value != 0.0f) && !bAttacking) {
 		bMovingRight = true;
 		// Finds out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -238,10 +246,27 @@ void AMain::LookUpAtRate(float rate) {
 
 void AMain::LMBDown() {
 	bLMBDown = true;
+
+	// If Player has a weapon equipped:
+	if (EquippedWeapon) {
+		LightAttack();
+	}
 }
 
 void AMain::LMBUp() {
 	bLMBDown = false;
+}
+
+void AMain::RMBDown() {
+	bRMBDown = true;
+	// If Player has a weapon equipped:
+	if (EquippedWeapon) {
+		HeavyAttack();
+	}
+}
+
+void AMain::RMBUp() {
+	bRMBDown = false;
 }
 
 void AMain::InteractDown() {
@@ -301,4 +326,44 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet) {
 		EquippedWeapon->Destroy();
 	}
 	EquippedWeapon = WeaponToSet;
+}
+
+void AMain::LightAttack() {	
+	if (!bAttacking) {
+		bAttacking = true;
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance && CombatMontage) {
+			AnimInstance->Montage_Play(CombatMontage, 1.5f);
+			AnimInstance->Montage_JumpToSection(FName("Attack_1"), CombatMontage);
+		}
+	}	
+}
+
+void AMain::HeavyAttack() {	
+	if (!bAttacking) {
+		bAttacking = true;
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance && CombatMontage) {
+			AnimInstance->Montage_Play(CombatMontage, 0.9f);
+			AnimInstance->Montage_JumpToSection(FName("Attack_2"), CombatMontage);
+		}
+	}	
+}
+
+void AMain::AttackEnd() {
+	bAttacking = false;
+
+	if (bLMBDown) {
+		LightAttack();
+	}
+	else if (bRMBDown) {
+		HeavyAttack();
+	}
+
+}
+
+void AMain::PlaySwingSound() {
+	if (EquippedWeapon->SwingSound) {
+		UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSound);
+	}	
 }

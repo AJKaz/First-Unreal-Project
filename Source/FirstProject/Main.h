@@ -97,6 +97,11 @@ public:
 	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "Player Stats")
 	int32 Coins;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Anims")
+	bool bAttacking;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Anims")
+	class UAnimMontage* CombatMontage;
 
 protected:
 	// Called when the game starts or when spawned
@@ -132,6 +137,10 @@ public:
 	void LMBDown();
 	void LMBUp();
 
+	bool bRMBDown;
+	void RMBDown();
+	void RMBUp();
+
 	bool bInteractDown;
 	void InteractDown();
 	void InteractUp();
@@ -155,5 +164,14 @@ public:
 	void SetEquippedWeapon(AWeapon* WeaponToSet);
 	FORCEINLINE AWeapon* GetEquippedWeapon() { return EquippedWeapon; }
 	FORCEINLINE void SetActiveOverlappingItem(AItem* Item) { ActiveOverlappingItem = Item; }
+
+	void LightAttack();
+	void HeavyAttack();
+
+	UFUNCTION(BlueprintCallable)
+	void AttackEnd();
+
+	UFUNCTION(BlueprintCallable)
+	void PlaySwingSound();
 
 };
