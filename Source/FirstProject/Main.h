@@ -45,6 +45,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MinSprintStamina;
 
+	/**
+	* Interping for player attacks
+	* Helps player target enemies
+	*/
+	float InterpSpeed;
+
+	bool bInterpToEnemy;	
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	class AEnemy* CombatTarget;
+
+
 	/** Set movement status and running speed */
 	void SetMovementStatus(EMovementStatus Status);
 
@@ -73,6 +85,7 @@ public:
 	// Scales turning functions for camera
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera);
 	float BaseTurnRate;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera);
 	float BaseLookUpRate;
 
@@ -180,4 +193,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void PlaySwingSound();
 
+	FORCEINLINE void SetCombatTarget(AEnemy* Target) { CombatTarget = Target; }
+
+	FRotator GetLookAtRotationYaw(FVector Target);
 };

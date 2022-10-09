@@ -14,6 +14,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Sound/SoundCue.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Enemy.h"
 
 
 // Sets default values
@@ -76,6 +78,10 @@ AMain::AMain() {
 
 	StaminaDrainRate = 25.f;
 	MinSprintStamina = 50.f;
+
+	// Interp Values:
+	InterpSpeed = 15.f;
+	bInterpToEnemy = false;
 }
 
 
@@ -162,6 +168,18 @@ void AMain::Tick(float DeltaTime) {
 		;
 	}
 
+	// Interp to the enemy (aim assist):
+	if (bInterpToEnemy && CombatTarget) {
+		FRotator LookAtYaw = GetLookAtRotationYaw(CombatTarget->GetActorLocation());
+		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
+		SetActorRotation(InterpRotation);
+	}
+}
+
+FRotator AMain::GetLookAtRotationYaw(FVector Target) {
+	FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), Target);
+	FRotator LookAtRotationYaw(0.f, LookAtRotation.Yaw, 0.f);
+	return LookAtRotationYaw;
 }
 
 // Called to bind functionality to input
@@ -331,6 +349,7 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet) {
 void AMain::LightAttack() {	
 	if (!bAttacking) {
 		bAttacking = true;
+		bInterpToEnemy = true;
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance && CombatMontage) {
 			AnimInstance->Montage_Play(CombatMontage, 1.5f);
@@ -342,6 +361,7 @@ void AMain::LightAttack() {
 void AMain::HeavyAttack() {	
 	if (!bAttacking) {
 		bAttacking = true;
+		bInterpToEnemy = true;
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance && CombatMontage) {
 			AnimInstance->Montage_Play(CombatMontage, 0.9f);
@@ -352,7 +372,7 @@ void AMain::HeavyAttack() {
 
 void AMain::AttackEnd() {
 	bAttacking = false;
-
+	bInterpToEnemy = false;
 	if (bLMBDown) {
 		LightAttack();
 	}
