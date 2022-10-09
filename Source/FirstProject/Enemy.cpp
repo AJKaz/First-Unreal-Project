@@ -5,7 +5,13 @@
 #include "Components/SphereComponent.h"
 #include "AIController.h"
 #include "Main.h"
+#include "Components/BoxComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/SkeletalMeshSocket.h"
+#include "Sound/SoundCue.h"
+#include "Animation/AnimInstance.h"
 
 // Sets default values
 AEnemy::AEnemy()
@@ -27,6 +33,10 @@ AEnemy::AEnemy()
 	MaxHealth = 100.f;
 	Damage = 10.f;
 
+	CombatCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("CombatCollison"));
+	CombatCollision->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName("EnemySocket"));
+
+
 }
 
 // Called when the game starts or when spawned
@@ -41,6 +51,14 @@ void AEnemy::BeginPlay()
 
 	CombatSphere->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatSphereOnOverlapBegin);
 	CombatSphere->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatSphereOnOverlapEnd);
+
+	CombatCollision->OnComponentBeginOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapBegin);
+	CombatCollision->OnComponentEndOverlap.AddDynamic(this, &AEnemy::CombatOnOverlapEnd);
+
+	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CombatCollision->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	CombatCollision->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
 }
 
@@ -80,16 +98,14 @@ void AEnemy::AgroSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AA
 }
 
 void AEnemy::CombatSphereOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
-
 	if (OtherActor) {
 		AMain* Main = Cast<AMain>(OtherActor);
 		if (Main) {
 			CombatTarget = Main;
 			bOverlappingCombatSphere = true;
-			SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Attacking);
+			Attack();
 		}
 	}
-
 }
 
 void AEnemy::CombatSphereOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
@@ -126,4 +142,64 @@ void AEnemy::MoveToTarget(AMain* Target) {
 		*/
 	}
 }
+
+void AEnemy::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) {
+	if (OtherActor) {
+		AMain* Main = Cast<AMain>(OtherActor);
+		if (Main) {
+			if (Main->HitParticles) {
+				const USkeletalMeshSocket* TipSocket = GetMesh()->GetSocketByName("TipSocket");
+				if (TipSocket) {
+					FVector SocketLocation = TipSocket->GetSocketLocation(GetMesh());
+					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Main->HitParticles, SocketLocation, FRotator(0.f), false);
+				}
+			}
+			if (Main->HitSound) {
+				UGameplayStatics::PlaySound2D(this, Main->HitSound);
+			}
+		}
+	}
+}
+
+void AEnemy::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) {
+
+}
+
+void AEnemy::ActivateCollision() {
+	CombatCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+void AEnemy::DeactivateCollision() {
+	CombatCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AEnemy::Attack() {
+	if (AIController) {
+		AIController->StopMovement();
+		SetEnemyMovementStatus(EEnemyMovementStatus::EMS_Attacking);
+	}
+	if (!bAttacking) {
+		bAttacking = true;
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance) {
+			AnimInstance->Montage_Play(CombatMontage, 1.25f);
+			AnimInstance->Montage_JumpToSection(FName("Attack"), CombatMontage);
+		}		
+	}
+}
+
+void AEnemy::AttackEnd() {
+	bAttacking = false;
+	if (bOverlappingCombatSphere) {
+		Attack();
+	}
+}
+
+void AEnemy::PlaySwingSound() {
+	if (SwingSound) {
+		UGameplayStatics::PlaySound2D(this, SwingSound);
+	}
+}
+
+
 
