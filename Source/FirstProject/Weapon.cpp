@@ -24,10 +24,15 @@ AWeapon::AWeapon() {
 	CombatCollision->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 
 	bWeaponParticles = false;
+	bLightAttack = true;
 
 	WeaponState = EWeaponState::EWS_Pickup;
 
-	Damage = 25.f;
+	LightDamage = 25.f;
+	HeavyDamage = 50.f;
+
+	SHeavyAttackCost = 80.f;
+	SLightAttackCost = 45.f;
 
 }
 
@@ -77,6 +82,12 @@ void AWeapon::CombatOnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 			if (Enemy->HitSound) {
 				UGameplayStatics::PlaySound2D(this, Enemy->HitSound);
 			}
+			if (DamageTypeClass) {
+				if (bLightAttack)
+					UGameplayStatics::ApplyDamage(Enemy, LightDamage, WeaponInstigator, this, DamageTypeClass);
+				else
+					UGameplayStatics::ApplyDamage(Enemy, HeavyDamage, WeaponInstigator, this, DamageTypeClass);
+			}
 		}
 	}
 }
@@ -87,6 +98,8 @@ void AWeapon::CombatOnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActo
 
 void AWeapon::Equip(AMain* Char) {
 	if (Char) {
+		SetInstigator(Char->GetController());
+
 		SkeletalMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 		SkeletalMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 

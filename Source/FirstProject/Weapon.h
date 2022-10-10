@@ -41,10 +41,27 @@ public:
 	class UBoxComponent* CombatCollision;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Combat")
-	float Damage;
+	float LightDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Combat")
+	float HeavyDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Combat")
+	float SHeavyAttackCost;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Combat")
+	float SLightAttackCost;
+
+	bool bLightAttack;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item | Sound")
 	USoundCue* SwingSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TSubclassOf<UDamageType> DamageTypeClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	AController* WeaponInstigator;
 
 protected:
 
@@ -72,4 +89,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void DeactivateCollision();
+
+	FORCEINLINE void SetInstigator(AController* Inst) { WeaponInstigator = Inst; }
 };

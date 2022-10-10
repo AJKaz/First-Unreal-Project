@@ -65,9 +65,6 @@ AMain::AMain() {
 	MaxStamina = 250.f;
 	Stamina = MaxStamina;
 
-	// MOVE THESE TO WEAPON.CPP 
-	SHeavyAttackCost = 80.f;
-	SLightAttackCost = 45.f;
 	SJumpCost = 30.f;
 
 	RunningSpeed = 500.f;
@@ -309,21 +306,6 @@ void AMain::InteractUp() {
 	bInteractDown = false;
 }
 
-void AMain::DecrementHealth(float Amount) {
-	// If player has no health, decrement health (for health bar), and die
-	if (Health - Amount <= 0.f) {
-		Health -= Amount;
-		Die();
-	}
-	else {
-		Health -= Amount;
-	}
-}
-
-void AMain::Die() {
-
-}
-
 void AMain::IncrementCoins(int32 Amount) {
 	Coins += Amount;
 }
@@ -355,10 +337,12 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet) {
 }
 
 void AMain::LightAttack() {	
-	if (!bAttacking && Stamina >= SLightAttackCost) {
-		Stamina -= SLightAttackCost;
+	float StaminaCost = EquippedWeapon->SLightAttackCost;
+	if (!bAttacking && Stamina >= StaminaCost) {
+		Stamina -= StaminaCost;
 		bAttacking = true;
 		bInterpToEnemy = true;
+		EquippedWeapon->bLightAttack = true;
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance && CombatMontage) {
 			AnimInstance->Montage_Play(CombatMontage, 1.5f);
@@ -368,10 +352,12 @@ void AMain::LightAttack() {
 }
 
 void AMain::HeavyAttack() {	
-	if (!bAttacking && Stamina >= SHeavyAttackCost) {
-		Stamina -= SHeavyAttackCost;
+	float StaminaCost = EquippedWeapon->SHeavyAttackCost;
+	if (!bAttacking && Stamina >= StaminaCost) {
+		Stamina -= StaminaCost;
 		bAttacking = true;
 		bInterpToEnemy = true;
+		EquippedWeapon->bLightAttack = false;
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		if (AnimInstance && CombatMontage) {
 			AnimInstance->Montage_Play(CombatMontage, 0.9f);
@@ -396,4 +382,28 @@ void AMain::PlaySwingSound() {
 	if (EquippedWeapon->SwingSound) {
 		UGameplayStatics::PlaySound2D(this, EquippedWeapon->SwingSound);
 	}	
+}
+
+float AMain::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+	DecrementHealth(DamageAmount);
+	return DamageAmount;
+}
+
+void AMain::DecrementHealth(float Amount) {
+	// If player has no health, decrement health (for health bar visuals), and die
+	if (Health - Amount <= 0.f) {
+		Health -= Amount;
+		Die();
+	}
+	else {
+		Health -= Amount;
+	}
+}
+
+void AMain::Die() {
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && CombatMontage) {
+		AnimInstance->Montage_Play(CombatMontage, 1.0f);
+		AnimInstance->Montage_JumpToSection(FName("Death"));
+	}
 }

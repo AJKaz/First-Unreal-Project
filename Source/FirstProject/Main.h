@@ -97,8 +97,6 @@ public:
 	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "Player Stats")
 	float Stamina;
 
-	float SHeavyAttackCost;
-	float SLightAttackCost;
 	float SJumpCost;
 
 	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "Player Stats")
@@ -171,6 +169,8 @@ public:
 	void SetMovementStatus(EMovementStatus Status);
 
 	void DecrementHealth(float Amount);
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	void Die();
 
