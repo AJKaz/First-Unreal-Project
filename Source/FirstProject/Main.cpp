@@ -16,6 +16,7 @@
 #include "Sound/SoundCue.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Enemy.h"
+#include "MainPlayerController.h"
 
 
 // Sets default values
@@ -82,6 +83,7 @@ AMain::AMain() {
 	bInteractDown = false;
 	bInterpToEnemy = false;
 	bAttacking = false;
+	bHasCombatTarget = false;
 
 	// Initalize Enums to Normal:
 	MovementStatus = EMovementStatus::EMS_Normal;
@@ -93,6 +95,9 @@ AMain::AMain() {
 // Called when the game starts or when spawned
 void AMain::BeginPlay() {
 	Super::BeginPlay();	
+
+	MainPlayerController = Cast<AMainPlayerController>(GetController());
+
 }
 
 // Called every frame
@@ -179,6 +184,14 @@ void AMain::Tick(float DeltaTime) {
 		FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), LookAtYaw, DeltaTime, InterpSpeed);
 		SetActorRotation(InterpRotation);
 	}
+
+	if (CombatTarget) {
+		CombatTargetLocation = CombatTarget->GetActorLocation();
+		if (MainPlayerController) {
+			MainPlayerController->EnemyLocation = CombatTargetLocation;
+		}
+	}
+
 }
 
 FRotator AMain::GetLookAtRotationYaw(FVector Target) {
