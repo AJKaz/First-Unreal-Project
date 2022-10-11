@@ -17,6 +17,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Enemy.h"
 #include "MainPlayerController.h"
+#include "MainAnimInstance.h"
 
 
 // Sets default values
@@ -40,9 +41,10 @@ AMain::AMain() {
 	// to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false;
 
-	// Sets turn rates for inputs
+	// Sets turn rates for inputs & set jump velocity
 	BaseTurnRate = 65.f;
 	BaseLookUpRate = 65.f;
+	MaxJumpVelocity = 550.f;
 
 	// Stop camera from turning character
 	bUseControllerRotationPitch = false;
@@ -52,7 +54,7 @@ AMain::AMain() {
 	// Config character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true;			// Makes character move in direction of input
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.f, 0.0f);	// at THIS rotation rate
-	GetCharacterMovement()->JumpZVelocity = 550.f;
+	GetCharacterMovement()->JumpZVelocity = MaxJumpVelocity;;
 	GetCharacterMovement()->AirControl = 0.75f;							// Allows movement in air, set to 1.0f for full movement
 
 	/**
@@ -64,17 +66,19 @@ AMain::AMain() {
 	MaxHealth = 100.f;
 	Health = MaxHealth;
 	MaxStamina = 250.f;
-	Stamina = MaxStamina;
+	Stamina = MaxStamina;	
 
-	SJumpCost = 30.f;
-
+	// Sprint/Run/Jump Variables:
 	RunningSpeed = 500.f;
 	SprintingSpeed = 750.f;
 	StaminaDrainRate = 25.f;
 	MinSprintStamina = 50.f;
+	SJumpCost = 30.f;
 
+	// Combat Variables:
 	InterpSpeed = 15.f;
 
+	// Misc bools
 	bMovingForward = false;
 	bMovingRight = false;
 	bShiftKeyDown = false;
@@ -84,6 +88,7 @@ AMain::AMain() {
 	bInterpToEnemy = false;
 	bAttacking = false;
 	bHasCombatTarget = false;
+	bIsInAir = false;
 
 	// Initalize Enums to Normal:
 	MovementStatus = EMovementStatus::EMS_Normal;
@@ -97,12 +102,13 @@ void AMain::BeginPlay() {
 	Super::BeginPlay();	
 
 	MainPlayerController = Cast<AMainPlayerController>(GetController());
-
 }
 
 // Called every frame
 void AMain::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
+
+	if (!IsAlive()) return;
 
 	float DeltaStamina = StaminaDrainRate * DeltaTime;
 	switch (StaminaStatus) {
@@ -124,7 +130,7 @@ void AMain::Tick(float DeltaTime) {
 				Stamina = MaxStamina;
 			}
 			else {
-				Stamina += DeltaStamina;
+				Stamina += DeltaStamina * 0.9;
 			}
 			SetMovementStatus(EMovementStatus::EMS_Normal);
 		}
@@ -146,31 +152,26 @@ void AMain::Tick(float DeltaTime) {
 			// replenish stamina
 			if (Stamina + DeltaStamina >= MinSprintStamina) {
 				SetStaminaStatus(EStaminaStatus::ESS_Normal);
-				Stamina += DeltaStamina;
+				Stamina += DeltaStamina * 0.9;
 			}
 			else {
-				Stamina += DeltaStamina;
+				Stamina += DeltaStamina * 0.9;
 			}
 			SetMovementStatus(EMovementStatus::EMS_Normal);
 		}
 		break;
 	case EStaminaStatus::ESS_Exhausted:
-		if (bShiftKeyDown && (bMovingForward || bMovingRight)) {
-			Stamina = 0.f;
-		}
-		else {
-			SetStaminaStatus(EStaminaStatus::ESS_ExhaustedRecovering);
-			Stamina += DeltaStamina;
-		}
+		SetStaminaStatus(EStaminaStatus::ESS_ExhaustedRecovering);
+		Stamina += DeltaStamina * 0.6;
 		SetMovementStatus(EMovementStatus::EMS_Normal);
 		break;
 	case EStaminaStatus::ESS_ExhaustedRecovering:
 		if (Stamina + DeltaStamina >= MinSprintStamina) {
 			SetStaminaStatus(EStaminaStatus::ESS_Normal);
-			Stamina += DeltaStamina;
+			Stamina += DeltaStamina * 0.6;
 		}
 		else {
-			Stamina += DeltaStamina;
+			Stamina += DeltaStamina * 0.6;
 		}
 		SetMovementStatus(EMovementStatus::EMS_Normal);
 		break;
@@ -210,7 +211,7 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMain::MoveRight);
 
 	// Bind keyboard jumping
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMain::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	// Bind keyboard sprinting
@@ -242,7 +243,7 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 /// Moves player depending on direction camera is facing AND input they press
 /// </summary>
 void AMain::MoveForward(float value) {
-	if ((Controller != nullptr) && (value != 0.0f) && !bAttacking) {
+	if ((Controller != nullptr) && (value != 0.0f) && !bAttacking && IsAlive()) {
 		bMovingForward = true;
 		// Finds out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -258,7 +259,7 @@ void AMain::MoveForward(float value) {
 
 
 void AMain::MoveRight(float value) {
-	if ((Controller != nullptr) && (value != 0.0f) && !bAttacking) {
+	if ((Controller != nullptr) && (value != 0.0f) && !bAttacking && IsAlive()) {
 		bMovingRight = true;
 		// Finds out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
@@ -269,6 +270,26 @@ void AMain::MoveRight(float value) {
 	}
 	else {
 		bMovingRight = false;
+	}
+}
+
+void AMain::SetIsInAir(bool InAir) { bIsInAir = InAir; }
+
+void AMain::Jump() {
+	if (!bIsInAir && IsAlive()) {
+		if (Stamina >= SJumpCost) {
+			GetCharacterMovement()->JumpZVelocity = MaxJumpVelocity;
+			//Super::Jump(); This works but shows error in visual studio
+			Stamina -= SJumpCost;
+			ACharacter::Jump();
+		}
+		else {
+			// If characted doesn't have enough stamina, let them 
+			// partially jump depending on how much stamina they have
+			GetCharacterMovement()->JumpZVelocity = (Stamina / SJumpCost) * MaxJumpVelocity;
+			Stamina = 0;
+			ACharacter::Jump();									
+		}		
 	}
 }
 
@@ -283,6 +304,9 @@ void AMain::LookUpAtRate(float rate) {
 void AMain::LMBDown() {
 	bLMBDown = true;
 
+	// If player is dead, don't accept LMB input
+	if (!IsAlive()) return;
+
 	// If Player has a weapon equipped:
 	if (EquippedWeapon) {
 		LightAttack();
@@ -295,6 +319,10 @@ void AMain::LMBUp() {
 
 void AMain::RMBDown() {
 	bRMBDown = true;
+
+	// If player is dead, don't let them attack
+	if (!IsAlive()) return;
+
 	// If Player has a weapon equipped:
 	if (EquippedWeapon) {
 		HeavyAttack();
@@ -307,6 +335,10 @@ void AMain::RMBUp() {
 
 void AMain::InteractDown() {
 	bInteractDown = true;
+
+	// If player is dead, don't let them pick up items
+	if (!IsAlive()) return;
+
 	if (ActiveOverlappingItem) {
 		AWeapon* Weapon = Cast<AWeapon>(ActiveOverlappingItem);
 		if (Weapon) {
@@ -315,12 +347,20 @@ void AMain::InteractDown() {
 		}
 	}
 }
+
 void AMain::InteractUp() {
 	bInteractDown = false;
 }
 
 void AMain::IncrementCoins(int32 Amount) {
 	Coins += Amount;
+}
+
+void AMain::IncrementHealth(float Amount) {
+	if (Health + Amount >= MaxHealth) 
+		Health = MaxHealth;	
+	else 
+		Health += Amount;	
 }
 
 void AMain::SetMovementStatus(EMovementStatus Status) {
@@ -351,7 +391,7 @@ void AMain::SetEquippedWeapon(AWeapon* WeaponToSet) {
 
 void AMain::LightAttack() {	
 	float StaminaCost = EquippedWeapon->SLightAttackCost;
-	if (!bAttacking && Stamina >= StaminaCost) {
+	if (!bAttacking && (Stamina >= StaminaCost) && (MovementStatus != EMovementStatus::EMS_Dead)) {
 		Stamina -= StaminaCost;
 		bAttacking = true;
 		bInterpToEnemy = true;
@@ -366,7 +406,7 @@ void AMain::LightAttack() {
 
 void AMain::HeavyAttack() {	
 	float StaminaCost = EquippedWeapon->SHeavyAttackCost;
-	if (!bAttacking && Stamina >= StaminaCost) {
+	if (!bAttacking && (Stamina >= StaminaCost) && (MovementStatus != EMovementStatus::EMS_Dead)) {
 		Stamina -= StaminaCost;
 		bAttacking = true;
 		bInterpToEnemy = true;
@@ -398,7 +438,21 @@ void AMain::PlaySwingSound() {
 }
 
 float AMain::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
-	DecrementHealth(DamageAmount);
+	// If player has no health, decrement health (for health bar visuals), and die
+	if (Health - DamageAmount <= 0.f) {
+		Health -= DamageAmount;
+		Die();
+		if (DamageCauser) {
+			AEnemy* Enemy = Cast<AEnemy>(DamageCauser);
+			if (Enemy) {
+				Enemy->bHasValidTarget = false;
+			}
+		}
+	}
+	else {
+		Health -= DamageAmount;
+	}
+
 	return DamageAmount;
 }
 
@@ -406,17 +460,60 @@ void AMain::DecrementHealth(float Amount) {
 	// If player has no health, decrement health (for health bar visuals), and die
 	if (Health - Amount <= 0.f) {
 		Health -= Amount;
-		Die();
+		Die();		
 	}
 	else {
 		Health -= Amount;
 	}
 }
 
-void AMain::Die() {
+void AMain::Die() {	
+	if (MovementStatus == EMovementStatus::EMS_Dead) return;
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 	if (AnimInstance && CombatMontage) {
 		AnimInstance->Montage_Play(CombatMontage, 1.0f);
-		AnimInstance->Montage_JumpToSection(FName("Death"));
+		AnimInstance->Montage_JumpToSection(FName("Death"));		
+	}
+	SetMovementStatus(EMovementStatus::EMS_Dead);
+}
+
+void AMain::DeathEnd() {
+	GetMesh()->bPauseAnims = true;
+	GetMesh()->bNoSkeletonUpdate = true;
+}
+
+void AMain::UpdateCombatTarget() {
+	TArray<AActor*> OverlappingActors;	
+	GetOverlappingActors(OverlappingActors, EnemyFilter);
+	
+	// If there are no enemies:
+	if (OverlappingActors.Num() == 0) {
+		if (MainPlayerController)
+			MainPlayerController->RemoveEnemyHealthBar();			
+		return;
+	}
+	
+	// Find enemy closest to player:
+	AEnemy* ClosestEnemy = Cast<AEnemy>(OverlappingActors[0]);
+	if (ClosestEnemy) {
+		FVector Location = GetActorLocation();
+		float MinDistance = (ClosestEnemy->GetActorLocation() - Location).Size();
+
+		for (auto Actor : OverlappingActors) {
+			AEnemy* Enemy = Cast<AEnemy>(Actor);
+			if (Enemy) {
+				float DistanceToActor = (Enemy->GetActorLocation() - Location).Size();
+				if (DistanceToActor < MinDistance) {
+					MinDistance = DistanceToActor;
+					ClosestEnemy = Enemy;
+				}
+			}			
+		}
+		// Set combat target & display enemy health
+		if (MainPlayerController) {
+			MainPlayerController->DisplayEnemyHealthBar();
+		}
+		SetCombatTarget(ClosestEnemy);
+		bHasCombatTarget = true;
 	}
 }

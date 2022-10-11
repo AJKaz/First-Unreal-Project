@@ -10,6 +10,7 @@ UENUM(BlueprintType)
 enum class EMovementStatus : uint8 {
 	EMS_Normal UMETA(DisplayName = "Normal"),
 	EMS_Sprinting UMETA(DisplayName = "Sprinting"),
+	EMS_Dead UMETA(DisplayName = "Dead"),
 	EMS_MAX UMETA(DisplayName = "DefaultMAX")
 };
 
@@ -98,6 +99,10 @@ public:
 	float Stamina;
 
 	float SJumpCost;
+	float MaxJumpVelocity;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool bIsInAir;
 
 	UPROPERTY(EditAnywhere, BluePrintReadOnly, Category = "Player Stats")
 	int32 Coins;
@@ -126,8 +131,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
 	class AMainPlayerController* MainPlayerController;
 
-	UPROPERTY(BlueprintReadWrite, VisibleAnywhere, Category = "Combat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat")
 	FVector CombatTargetLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TSubclassOf<AEnemy> EnemyFilter;
 
 protected:
 	// Called when the game starts or when spawned
@@ -148,6 +156,8 @@ public:
 
 	// Called for side to side input
 	void MoveRight(float value);
+
+	virtual void Jump() override;
 
 	/** Called via input to turn at a given rate
 	*  @param rate This is a normalized rate, 1.0 means 100% of desired turn rate
@@ -179,8 +189,12 @@ public:
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	void Die();
-
+	
+	UFUNCTION(BlueprintCallable)
 	void IncrementCoins(int32 Amount);
+
+	UFUNCTION(BlueprintCallable)
+	void IncrementHealth(float Amount);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Items)
 	class AWeapon* EquippedWeapon;
@@ -201,11 +215,20 @@ public:
 
 	FRotator GetLookAtRotationYaw(FVector Target);
 
+	UFUNCTION(BlueprintCallable)
+	void DeathEnd();
+
+	UFUNCTION(BlueprintCallable)
+	void SetIsInAir(bool InAir);
+
+	void UpdateCombatTarget();
+
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE AWeapon* GetEquippedWeapon() { return EquippedWeapon; }
 	FORCEINLINE void SetActiveOverlappingItem(AItem* Item) { ActiveOverlappingItem = Item; }
 	FORCEINLINE void SetHasCombatTarget(bool HasTarget) { bHasCombatTarget = HasTarget; }
 	FORCEINLINE void SetCombatTarget(AEnemy* Target) { CombatTarget = Target; }
+	FORCEINLINE bool IsAlive() { return MovementStatus != EMovementStatus::EMS_Dead; }	
 
 };

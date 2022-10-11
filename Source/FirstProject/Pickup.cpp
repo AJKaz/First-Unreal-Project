@@ -3,9 +3,12 @@
 
 #include "Pickup.h"
 #include "Main.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "Sound/SoundCue.h"
 
 APickup::APickup() {
-	CoinValue = 1;
+
 }
 
 void APickup::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -16,7 +19,15 @@ void APickup::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* O
 		// Cast OtherActor to AMain, returns null if can't
 		AMain* Main = Cast<AMain>(OtherActor);
 		if (Main) {
-			Main->IncrementCoins(CoinValue);
+			OnPickupBP(Main);
+			// Play pickup animation (if there is one)
+			if (OverlapParticles) {
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), OverlapParticles, GetActorLocation(), FRotator(0.f), true);
+			}
+			if (OverlapSound) {
+				UGameplayStatics::PlaySound2D(this, OverlapSound);
+			}
+			
 			// Destroy item and everything related, memory management, yay!
 			Destroy();
 		}

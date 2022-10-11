@@ -31,4 +31,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement)
 	class AMain* Main;
+
+public:
+
+	FORCEINLINE bool GetIsInAir() { return bIsInAir; }
 };
