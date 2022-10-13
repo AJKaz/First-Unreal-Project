@@ -83,6 +83,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera);
 	float BaseLookUpRate;
 
+	bool bMovingForward;
+	bool bMovingRight;
+
 	/**
 	/*
 	/* Player Stats
@@ -150,17 +153,23 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
+	/** Called to bind functionality to input */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	// Called for forwards/backwards input
-	void MoveForward(float value);
+	/** Determines if player can move */
+	bool CanMove(float Value);
 
-	bool bMovingForward;
-	bool bMovingRight;
+	/** Called for forwards/backwards input */
+	void MoveForward(float Value);
 
-	// Called for side to side input
-	void MoveRight(float value);
+	/** Called for side to side input */ 
+	void MoveRight(float Value);
+
+	/** Called for Yaw Rotation */
+	void Turn(float Value);
+
+	/** Called for Pitch Rotation */
+	void LookUp(float Value);
 
 	virtual void Jump() override;
 
@@ -238,6 +247,8 @@ public:
 
 	void ESCDown();
 	void ESCUp();
+
+	bool Paused();
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }

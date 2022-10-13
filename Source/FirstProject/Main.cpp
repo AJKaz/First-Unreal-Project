@@ -221,9 +221,9 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
 
-	// Bind keyboard Pause
-	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &AMain::ESCDown);
-	PlayerInputComponent->BindAction("ESC", IE_Released, this, &AMain::ESCUp);
+	// Bind Pause
+	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &AMain::ESCDown).bExecuteWhenPaused = true;
+	PlayerInputComponent->BindAction("ESC", IE_Released, this, &AMain::ESCUp).bExecuteWhenPaused = true;
 
 	// Bind left mouse button
 	PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &AMain::LMBDown);
@@ -238,26 +238,30 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMain::InteractUp);
 
 	// Binds mouse turning
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+	PlayerInputComponent->BindAxis("Turn", this, &AMain::Turn);
+	PlayerInputComponent->BindAxis("LookUp", this, &AMain::LookUp);
 
 	// Binds keyboard turning
 	PlayerInputComponent->BindAxis("TurnRate", this, &AMain::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AMain::LookUpAtRate);
 }
 
+bool AMain::CanMove(float Value) {
+	return (Value != 0.0f) && !bAttacking && IsAlive();
+}
+
 /// <summary>
 /// Moves player depending on direction camera is facing AND input they press
 /// </summary>
-void AMain::MoveForward(float value) {
-	if ((Controller != nullptr) && (value != 0.0f) && !bAttacking && IsAlive()) {
+void AMain::MoveForward(float Value) {
+	if (CanMove(Value)) {
 		bMovingForward = true;
 		// Finds out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		AddMovementInput(Direction, value);
+		AddMovementInput(Direction, Value);
 	}
 	else {
 		bMovingForward = false;
@@ -265,18 +269,30 @@ void AMain::MoveForward(float value) {
 }
 
 
-void AMain::MoveRight(float value) {
-	if ((Controller != nullptr) && (value != 0.0f) && !bAttacking && IsAlive()) {
+void AMain::MoveRight(float Value) {
+	if (CanMove(Value)) {
 		bMovingRight = true;
 		// Finds out which way is forward
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0.f, Rotation.Yaw, 0.f);
 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		AddMovementInput(Direction, value);
+		AddMovementInput(Direction, Value);
 	}
 	else {
 		bMovingRight = false;
+	}
+}
+
+void AMain::Turn(float Value) {
+	if (CanMove(Value)) {
+		AddControllerYawInput(Value);
+	}
+}
+
+void AMain::LookUp(float Value) {
+	if (CanMove(Value)) {
+		AddControllerPitchInput(Value);
 	}
 }
 
@@ -590,6 +606,12 @@ void AMain::ESCDown() {
 	bESCDown = true;
 	if (MainPlayerController) {
 		MainPlayerController->TogglePauseMenu();
+		if (MainPlayerController->bPauseMenuVisible) {
+			MainPlayerController->SetPause(true);
+		}
+		else {
+			MainPlayerController->SetPause(false);
+		}
 	}
 }
 
