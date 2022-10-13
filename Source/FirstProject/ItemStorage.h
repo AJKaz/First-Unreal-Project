@@ -15,6 +15,9 @@ public:
 	// Sets default values for this actor's properties
 	AItemStorage();
 
+	UPROPERTY(EditDefaultsOnly, Category = "SaveData")
+	TMap<FString, TSubclassOf<class AWeapon>> WeaponMap;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

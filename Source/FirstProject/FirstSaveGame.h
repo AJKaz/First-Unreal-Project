@@ -26,6 +26,9 @@ struct FCharacterStats {
 	int32 Coins;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+	FString WeaponName;
+
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
 	FVector Location;
 
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")

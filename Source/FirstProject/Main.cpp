@@ -19,6 +19,7 @@
 #include "MainPlayerController.h"
 #include "MainAnimInstance.h"
 #include "FirstSaveGame.h"
+#include "ItemStorage.h"
 
 
 // Sets default values
@@ -90,6 +91,7 @@ AMain::AMain() {
 	bAttacking = false;
 	bHasCombatTarget = false;
 	bIsInAir = false;
+	bESCDown = false;
 
 	// Initalize Enums to Normal:
 	MovementStatus = EMovementStatus::EMS_Normal;
@@ -218,6 +220,10 @@ void AMain::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) {
 	// Bind keyboard sprinting
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMain::ShiftKeyDown);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMain::ShiftKeyUp);
+
+	// Bind keyboard Pause
+	PlayerInputComponent->BindAction("ESC", IE_Pressed, this, &AMain::ESCDown);
+	PlayerInputComponent->BindAction("ESC", IE_Released, this, &AMain::ESCUp);
 
 	// Bind left mouse button
 	PlayerInputComponent->BindAction("LMB", IE_Pressed, this, &AMain::LMBDown);
@@ -540,6 +546,10 @@ void AMain::SaveGame() {
 	SaveGameInstance->CharacterStats.MaxStamina = MaxStamina;
 	SaveGameInstance->CharacterStats.Coins = Coins;
 
+	if (EquippedWeapon) {
+		SaveGameInstance->CharacterStats.WeaponName = EquippedWeapon->Name;
+	}
+
 	/* Save player's location and rotation */
 	SaveGameInstance->CharacterStats.Location = GetActorLocation();
 	SaveGameInstance->CharacterStats.Rotation = GetActorRotation();
@@ -559,8 +569,30 @@ void AMain::LoadGame(bool SetPosition) {
 	MaxStamina = LoadGameInstance->CharacterStats.MaxStamina;
 	Coins = LoadGameInstance->CharacterStats.Coins;
 
+	if (WeaponStorage) {
+		AItemStorage* Weapons = GetWorld()->SpawnActor<AItemStorage>(WeaponStorage);
+		if (Weapons) {
+			FString WeaponName = LoadGameInstance->CharacterStats.WeaponName;
+			if (Weapons->WeaponMap.Contains(WeaponName)) {
+				AWeapon* WeaponToEquip = GetWorld()->SpawnActor<AWeapon>(Weapons->WeaponMap[WeaponName]);
+				WeaponToEquip->Equip(this);
+			}	
+		}		
+	}
+
 	if (SetPosition) {
 		SetActorLocation(LoadGameInstance->CharacterStats.Location);
 		SetActorRotation(LoadGameInstance->CharacterStats.Rotation);
 	}	
+}
+
+void AMain::ESCDown() {
+	bESCDown = true;
+	if (MainPlayerController) {
+		MainPlayerController->TogglePauseMenu();
+	}
+}
+
+void AMain::ESCUp() {
+	bESCDown = false;
 }
