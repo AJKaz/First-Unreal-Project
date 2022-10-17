@@ -62,9 +62,9 @@ void AMainPlayerController::DisplayPauseMenu_Implementation() {
 void AMainPlayerController::RemovePauseMenu_Implementation() {
 	if (PauseMenu) {
 		bPauseMenuVisible = false;		
-		FInputModeGameOnly InputMode;
-		SetInputMode(InputMode);
+		GameModeOnly();
 		bShowMouseCursor = false;
+		this->SetPause(false);
 	}
 }
 
@@ -87,4 +87,9 @@ void AMainPlayerController::RemoveEnemyHealthBar() {
 		bEnemyHealthBarVisible = false;
 		EnemyHealthBar->SetVisibility(ESlateVisibility::Hidden);
 	}
+}
+
+void AMainPlayerController::GameModeOnly() {
+	FInputModeGameOnly InputMode;
+	SetInputMode(InputMode);
 }

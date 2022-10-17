@@ -34,6 +34,9 @@ struct FCharacterStats {
 	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
 	FRotator Rotation;
 
+	UPROPERTY(VisibleAnywhere, Category = "SaveGameData")
+	FString LevelName;
+
 };
 
 /**

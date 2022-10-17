@@ -250,6 +250,8 @@ public:
 
 	bool Paused();
 
+	void LoadGameNoSwitch();
+
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE AWeapon* GetEquippedWeapon() { return EquippedWeapon; }

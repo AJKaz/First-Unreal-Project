@@ -60,4 +60,6 @@ public:
 	void DisplayEnemyHealthBar();
 	void RemoveEnemyHealthBar();
 
+	void GameModeOnly();
+
 };
