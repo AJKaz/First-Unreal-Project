@@ -26,7 +26,6 @@ public:
 	// Door to move when floor switch is stepped on
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Floor Switch")
 	UStaticMeshComponent* Door;
-
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Floor Switch")
 	FVector InitialDoorLocation;
