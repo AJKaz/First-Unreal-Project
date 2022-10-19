@@ -108,12 +108,12 @@ void AMain::BeginPlay() {
 	
 	FString Map = GetWorld()->GetMapName();
 	Map.RemoveFromStart(GetWorld()->StreamingLevelsPrefix);
-	if (Map != "SunTemple") {
+	//if (Map != "SunTemple") {
 		LoadGameNoSwitch();
 		if (MainPlayerController) {
 			MainPlayerController->GameModeOnly();
 		}
-	}
+	//}
 	
 }
 
